@@ -17,18 +17,10 @@
 #include <vector>
 #include <map>
 
-static void die(const char *msg){
-    fprintf(stderr, "[%d] %s\n", errno, msg);
-    abort();
-}
+#include "common.h"
 
-static void msg_errno(const char *msg) {
-    fprintf(stderr, "[errno:%d] %s\n", errno, msg);
-}
 
-static void msg(const char *msg) {
-    fprintf(stderr, "%s\n", msg);
-}
+const size_t k_max_args = 200 * 1000;
 
 //make the fd non blocking
 static void fd_set_nb(int fd) {
@@ -48,8 +40,6 @@ static void fd_set_nb(int fd) {
     }
 }
 
-const size_t k_max_msg = 32 << 20; 
-const size_t k_max_args = 200 * 1000;
 
 struct Conn {
     int fd = -1;

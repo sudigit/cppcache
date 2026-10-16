@@ -11,16 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "common.h"
 
-static void msg(const char *msg) {
-    fprintf(stderr, "%s\n", msg);
-}
-
-static void die(const char *msg) {
-    int err = errno;
-    fprintf(stderr, "[%d] %s\n", err, msg);
-    abort();
-}
 
 static int32_t read_full(int fd, char *buf, size_t n) {
     while (n > 0) {
@@ -48,8 +40,6 @@ static int32_t write_all(int fd, const char *buf, size_t n) {
     return 0;
 }
 
-const size_t k_max_msg = 4096;
-
 static int32_t send_req(int fd, const std::vector<std::string> &cmd) {
     uint32_t len = 4;
     for (const std::string &s : cmd) {
@@ -59,7 +49,7 @@ static int32_t send_req(int fd, const std::vector<std::string> &cmd) {
         return -1;
     }
 
-    char wbuf[4 + k_max_msg];
+    std::vector<char> wbuf(4 + k_max_msg);
     memcpy(&wbuf[0], &len, 4);  // assume little endian
     uint32_t n = cmd.size();
     memcpy(&wbuf[4], &n, 4);
@@ -70,14 +60,14 @@ static int32_t send_req(int fd, const std::vector<std::string> &cmd) {
         memcpy(&wbuf[cur + 4], s.data(), s.size());
         cur += 4 + s.size();
     }
-    return write_all(fd, wbuf, 4 + len);
+    return write_all(fd, wbuf.data(), 4 + len);
 }
 
 static int32_t read_res(int fd) {
     // 4 bytes header
-    char rbuf[4 + k_max_msg];
+    std::vector<char> rbuf(4 + k_max_msg);
     errno = 0;
-    int32_t err = read_full(fd, rbuf, 4);
+    int32_t err = read_full(fd, rbuf.data(), 4);
     if (err) {
         if (errno == 0) {
             msg("EOF");
@@ -88,7 +78,7 @@ static int32_t read_res(int fd) {
     }
 
     uint32_t len = 0;
-    memcpy(&len, rbuf, 4);  // assume little endian
+    memcpy(&len, rbuf.data(), 4);  // assume little endian
     if (len > k_max_msg) {
         msg("too long");
         return -1;
